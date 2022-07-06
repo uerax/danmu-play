@@ -15,8 +15,13 @@ import (
 )
 
 func Send(msg string) {
-
-	data := fmt.Sprintf("------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"bubble\"\r\n\r\n0\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"msg\"\r\n\r\n%s\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"color\"\r\n\r\n65532\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"mode\"\r\n\r\n1\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"fontsize\"\r\n\r\n25\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"rnd\"\r\n\r\n1657146441\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"roomid\"\r\n\r\n746504\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"csrf\"\r\n\r\n066a925463717b2ab4e7344619e0a515\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"csrf_token\"\r\n\r\n066a925463717b2ab4e7344619e0a515\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU--\r\n", msg)
+	// 懒得写直接curl转换
+	roomid, err := cfg.Config.GetValue("roomid")
+	if err != nil {
+		ulog.Error(err)
+		return
+	}
+	data := fmt.Sprintf("------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"bubble\"\r\n\r\n0\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"msg\"\r\n\r\n%s\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"color\"\r\n\r\n65532\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"mode\"\r\n\r\n1\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"fontsize\"\r\n\r\n25\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"rnd\"\r\n\r\n1657146441\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"roomid\"\r\n\r\n%d\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"csrf\"\r\n\r\n066a925463717b2ab4e7344619e0a515\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU\r\nContent-Disposition: form-data; name=\"csrf_token\"\r\n\r\n066a925463717b2ab4e7344619e0a515\r\n------WebKitFormBoundaryLP53IeC9HDisGqhU--\r\n", msg, roomid)
 	body := strings.NewReader(data)
 	req, err := http.NewRequest("POST", "https://api.live.bilibili.com/msg/send", body)
 	if err != nil {

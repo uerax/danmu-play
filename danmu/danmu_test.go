@@ -8,6 +8,7 @@ package danmu
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/uerax/danmuplay/cfg"
@@ -15,11 +16,10 @@ import (
 )
 
 func TestLog(t *testing.T) {
-	
-	cfg.Init("/Users/slaver/prj/danmuplay/etc")
+	ulog.Info(os.Getwd())
+	cfg.Init("../etc")
 	ulog.Info(1)
 	fmt.Println(cfg.Config.GetValue("cookie"))
-	Send("1")
 }
 
 func TestNewBiliRoom(t *testing.T) {
