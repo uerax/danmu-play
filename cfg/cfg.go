@@ -2,7 +2,7 @@
  * @Author: ww
  * @Date: 2022-07-07 06:20:51
  * @Description:
- * @FilePath: /danmuplay/cfg/cfg.go
+ * @FilePath: \danmu-play\cfg\cfg.go
  */
 package cfg
 
@@ -18,4 +18,32 @@ func Init(path string) error {
 	}
 	Config = cf
 	return nil
+}
+
+func GetValue(param ...string) (interface{}, error) {
+	return Config.GetValue(param...)
+}
+
+func GetStringWithDefault(def string, param ...string) string {
+	i, err := Config.GetValue(param...)
+	if err != nil {
+		return def
+	}
+	return i.(string)
+}
+
+func GetIntWithDefault(def int, param ...string) int {
+	i, err := Config.GetValue(param...)
+	if err != nil {
+		return def
+	}
+	return i.(int)
+}
+
+func GetInt64WithDefault(def int64, param ...string) int64 {
+	i, err := Config.GetValue(param...)
+	if err != nil {
+		return def
+	}
+	return int64(i.(int))
 }
