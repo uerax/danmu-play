@@ -24,9 +24,8 @@ func TestLog(t *testing.T) {
 func TestNewBiliRoom(t *testing.T) {
 	cfg.Init("../etc")
 	tmp := NewBiliRoom("746504")
-	tmp.MsgHandler = func(mi *model.MessageInfo) error {
+	tmp.MsgHandler = func(mi *model.MessageInfo) {
 		Send(fmt.Sprintf("[弹幕] %s: 签到成功", mi.Info.([]interface{})[2].([]interface{})[1]))
-		return nil
 	}
 	go tmp.Start()
 	tmp.DanmuHandler()

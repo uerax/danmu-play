@@ -6,7 +6,11 @@
  */
 package cfg
 
-import "github.com/uerax/goconf"
+import (
+	"fmt"
+
+	"github.com/uerax/goconf"
+)
 
 var Config *goconf.CfgFile
 
@@ -29,7 +33,7 @@ func GetStringWithDefault(def string, param ...string) string {
 	if err != nil {
 		return def
 	}
-	return i.(string)
+	return fmt.Sprint(i)
 }
 
 func GetIntWithDefault(def int, param ...string) int {

@@ -16,26 +16,26 @@ import (
 	"github.com/uerax/danmuplay/utils"
 )
 
-func Send(msg string) {
-	// 直接curl转换懒得改了
+func Send(msg string) error {
+
 	roomid, err := cfg.Config.GetValue("roomid")
 	if err != nil {
-		ulog.Error(err)
-		return
+		return err
 	}
 	cookie, err := cfg.Config.GetValue("cookie")
 	if err != nil {
-		ulog.Error(err)
-		return
+		return err
 	}
 	csrf := utils.CookieFetchCsrf(cookie.(string))
+	if len(csrf) == 0 {
+		return fmt.Errorf("从cookie提取csrf失败")
+	}
 
 	data := `color=16777215&fontsize=25&mode=1&msg=` + msg + `&rnd=` + fmt.Sprint(time.Now().Unix()) + `&roomid=` + fmt.Sprint(roomid) + `&bubble=0&csrf_token=` + csrf + `&csrf=` + csrf
 
 	req, err := http.NewRequest("POST", "https://api.live.bilibili.com/msg/send", strings.NewReader(data))
 	if err != nil {
-		ulog.Error(err)
-		return
+		return err
 	}
 	req.Header.Set("Host", "api.live.bilibili.com")
 	req.Header.Set("Accept", "*/*")
@@ -49,9 +49,7 @@ func Send(msg string) {
 	req.Header.Set("Referer", fmt.Sprintf("https://live.bilibili.com/%d", roomid))
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36")
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		ulog.Error(err)
-	}
-	defer resp.Body.Close()
+	_, err = http.DefaultClient.Do(req)
+
+	return err
 }
