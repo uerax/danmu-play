@@ -2,7 +2,7 @@
  * @Author: ww
  * @Date: 2022-07-02 02:25:38
  * @Description:
- * @FilePath: \danmu-play\danmu\danmu.go
+ * @FilePath: /danmuplay/danmu/danmu.go
  */
 package danmu
 

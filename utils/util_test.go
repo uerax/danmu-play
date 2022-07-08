@@ -1,7 +1,7 @@
 /*
  * @Author: UerAx
  * @Date: 2022-07-07 23:54:13
- * @FilePath: \danmu-play\utils\util_test.go
+ * @FilePath: /danmuplay/utils/util_test.go
  * Copyright (c) 2022 by UerAx uerax@live.com, All Rights Reserved.
  */
 
@@ -19,7 +19,6 @@ func TestCookieFetchCsrf(t *testing.T) {
 		args args
 		want string
 	}{
-		// TODO: Add test cases.
 		{"case1", args{cookie}, "867b55d3680d3c6bcf27aa99aa428cae"},
 	}
 	for _, tt := range tests {

@@ -1,7 +1,7 @@
 /*
  * @Author: UerAx
  * @Date: 2022-07-08 14:35:55
- * @FilePath: \danmu-play\danmu\play.go
+ * @FilePath: /danmuplay/danmu/play.go
  * Copyright (c) 2022 by UerAx uerax@live.com, All Rights Reserved.
  */
 package danmu
@@ -9,9 +9,11 @@ package danmu
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/uerax/danmuplay/cfg"
+	"github.com/uerax/danmuplay/fate"
 	"github.com/uerax/danmuplay/model"
 	"github.com/uerax/danmuplay/redis"
 )
@@ -28,10 +30,10 @@ func Init() {
 
 func MsgHandler(msg *model.MessageInfo) {
 
-	// ulog.Info(msg)
+	ulog.Infof("[%s]: %s", msg.Info.([]interface{})[2].([]interface{})[1], msg.Info.([]interface{})[1])
 
 	m := msg.Info.([]interface{})[1].(string)
-
+	m = strings.TrimSpace(m)
 	if m[0] != '#' {
 		return
 	}
@@ -47,18 +49,125 @@ func MsgHandler(msg *model.MessageInfo) {
 		checkIn(uid, name)
 	case "积分":
 		getPoint(uid, name)
+	case "运势":
+		getFate(uid, name)
 	}
 
 	// redis.HGetAll(([]interface{})[2].([]interface{})[0].(string))
 }
 
 func SCMsgHandler(sc *model.SuperChatInfo) {
+	ulog.Infof("[%s] %d元: %s %d", sc.Data.UserInfo.Uname, sc.Data.Price, sc.Data.Message, sc.Data.ID)
+	uid := strconv.Itoa(sc.Data.UID)
+	incr := sc.Data.Price * 10
+	exists, err := redis.Exists(uid)
+	if err != nil {
+		ulog.Error(err)
+		return
+	}
+	if !exists {
+		_, err = redis.HSet(uid, "uid", uid)
+		if err != nil {
+			ulog.Error(err)
+			return
+		}
+		_, err = redis.HSet(uid, "name", sc.Data.UserInfo.Uname)
+		if err != nil {
+			ulog.Error(err)
+			return
+		}
+		_, err = redis.HSet(uid, "point", incr)
+		if err != nil {
+			ulog.Error(err)
+			return
+		}
+		_, err = redis.HSet(uid, "checkin", "")
+		if err != nil {
+			ulog.Error(err)
+		}
+		return
+	}
+	_, err = redis.Hincrby(uid, "point", int64(incr))
+	if err != nil {
+		ulog.Error(err)
+	}
 }
 
-func GuardHandler(gd *model.CrewInfo) {
+func GuardHandler(ci *model.CrewInfo) {
+	ulog.Infof("[%s] 开通 %s * %d%s %d元", ci.Data.Username, ci.Data.RoleName, ci.Data.Num, ci.Data.Unit, ci.Data.Price/1000)
+	uid := strconv.Itoa(ci.Data.UID)
+	incr := ci.Data.Price/100
+	exists, err := redis.Exists(uid)
+	if err != nil {
+		ulog.Error(err)
+		return
+	}
+	if !exists {
+		_, err = redis.HSet(uid, "uid", uid)
+		if err != nil {
+			ulog.Error(err)
+			return
+		}
+		_, err = redis.HSet(uid, "name", ci.Data.Username)
+		if err != nil {
+			ulog.Error(err)
+			return
+		}
+		_, err = redis.HSet(uid, "point", incr)
+		if err != nil {
+			ulog.Error(err)
+			return
+		}
+		_, err = redis.HSet(uid, "checkin", "")
+		if err != nil {
+			ulog.Error(err)
+		}
+		return
+	}
+	_, err = redis.Hincrby(uid, "point", int64(incr))
+	if err != nil {
+		ulog.Error(err)
+	}
 }
 
 func GiftHandler(gf *model.GiftInfo) {
+	ulog.Infof("[%s] 赠送 %d个 %s %.1f元", gf.Data.Uname, gf.Data.Num, gf.Data.GiftName, float64(gf.Data.Price)/1000*float64(gf.Data.Num))
+	uid := strconv.Itoa(gf.Data.UID)
+	incr := gf.Data.Price/100
+	if incr == 0 {
+		incr = gf.Data.Num
+	}
+	exists, err := redis.Exists(uid)
+	if err != nil {
+		ulog.Error(err)
+		return
+	}
+	if !exists {
+		_, err = redis.HSet(uid, "uid", uid)
+		if err != nil {
+			ulog.Error(err)
+			return
+		}
+		_, err = redis.HSet(uid, "name", gf.Data.Uname)
+		if err != nil {
+			ulog.Error(err)
+			return
+		}
+		_, err = redis.HSet(uid, "point", incr)
+		if err != nil {
+			ulog.Error(err)
+			return
+		}
+		_, err = redis.HSet(uid, "checkin", "")
+		if err != nil {
+			ulog.Error(err)
+		}
+		return
+	}
+	_, err = redis.Hincrby(uid, "point", int64(incr))
+	if err != nil {
+		ulog.Error(err)
+	}
 }
 
 func checkIn(uid, name string) {
@@ -121,4 +230,11 @@ func getPoint(uid, name string) {
 
 	Send(msg)
 
+}
+
+func getFate(uid, name string) {
+
+	msg := fate.GetFate(uid, name)
+	ulog.Info(msg)
+	Send(msg)
 }

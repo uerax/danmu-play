@@ -1,7 +1,7 @@
 /*
  * @Author: UerAx
  * @Date: 2022-07-08 16:21:39
- * @FilePath: \danmu-play\redis\redis.go
+ * @FilePath: /danmuplay/redis/redis.go
  * Copyright (c) 2022 by UerAx uerax@live.com, All Rights Reserved.
  */
 package redis
