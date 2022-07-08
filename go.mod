@@ -1,4 +1,4 @@
-module github.com/uerax/danmuplay
+module github.com/uerax/danmuplay/v2
 
 go 1.18
 
