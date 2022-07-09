@@ -17,5 +17,6 @@ func CookieFetchCsrf(cookie string) string {
 			return s[tit+1:]
 		}
 	}
+
 	return ""
 }
