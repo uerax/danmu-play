@@ -1,7 +1,7 @@
 /*
  * @Author: UerAx
  * @Date: 2022-07-07 23:54:13
- * @FilePath: /danmuplay/utils/util_test.go
+ * @FilePath: \danmu-play\utils\util_test.go
  * Copyright (c) 2022 by UerAx uerax@live.com, All Rights Reserved.
  */
 
@@ -28,4 +28,5 @@ func TestCookieFetchCsrf(t *testing.T) {
 			}
 		})
 	}
+
 }

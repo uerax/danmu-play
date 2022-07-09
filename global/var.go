@@ -6,12 +6,14 @@
  */
 package global
 
-import "github.com/uerax/ulog"
+import (
+	"github.com/UerAx/ulog/v2"
+)
 
 var Log *ulog.Ulog
 
 func init() {
-	Log = ulog.New()
+	Log = ulog.NewLog()
 }
 
 func Out(out ...string) {
