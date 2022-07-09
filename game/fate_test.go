@@ -2,9 +2,9 @@
  * @Author: ww
  * @Date: 2022-07-09 04:07:55
  * @Description:
- * @FilePath: /danmuplay/fate/fate_test.go
+ * @FilePath: /danmuplay/game/fate_test.go
  */
-package fate
+package game
 
 import "testing"
 

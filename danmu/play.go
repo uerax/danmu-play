@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/uerax/danmuplay/cfg"
-	"github.com/uerax/danmuplay/fate"
+	"github.com/uerax/danmuplay/game"
 	"github.com/uerax/danmuplay/model"
 	"github.com/uerax/danmuplay/redis"
 )
@@ -51,6 +51,8 @@ func MsgHandler(msg *model.MessageInfo) {
 		getPoint(uid, name)
 	case "运势":
 		getFate(uid, name)
+	case "能力":
+		getSuperpower(uid, name)
 	}
 
 	// redis.HGetAll(([]interface{})[2].([]interface{})[0].(string))
@@ -197,6 +199,7 @@ func checkIn(uid, name string) {
 		if err != nil {
 			ulog.Error(err)
 		}
+		Send(fmt.Sprintf("[%s] 签到成功", name))
 		return
 	}
 
@@ -217,6 +220,7 @@ func checkIn(uid, name string) {
 			return
 		}
 	}
+	Send(fmt.Sprintf("[%s] 签到成功", name))
 }
 
 func getPoint(uid, name string) {
@@ -234,7 +238,13 @@ func getPoint(uid, name string) {
 
 func getFate(uid, name string) {
 
-	msg := fate.GetFate(uid, name)
+	msg := game.GetFate(uid, name)
+	ulog.Info(msg)
+	Send(msg)
+}
+
+func getSuperpower(uid, name string) {
+	msg := game.GetSuperpower(uid, name)
 	ulog.Info(msg)
 	Send(msg)
 }
