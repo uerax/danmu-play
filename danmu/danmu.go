@@ -24,20 +24,19 @@ import (
 var ulog = global.Log
 
 type BiliRoom struct {
-	roomId  string
-	realId  string
-	address string
-	token   string
-	conn    *websocket.Conn
-	recMsg  chan []byte
-	OutMsg  chan []byte
-	isAlive bool
-	timeout int
-	MsgHandler func(mi *model.MessageInfo) error
-}
-
-func (t *BiliRoom) New(roomId string) {
-	t = NewBiliRoom(roomId)
+	roomId       string
+	realId       string
+	address      string
+	token        string
+	conn         *websocket.Conn
+	recMsg       chan []byte
+	OutMsg       chan []byte
+	isAlive      bool
+	timeout      int
+	MsgHandler   func(*model.MessageInfo)
+	SCMsgHandler func(*model.SuperChatInfo)
+	GuardHandler func(*model.CrewInfo)
+	GiftHandler  func(*model.GiftInfo)
 }
 
 func NewBiliRoom(roomId string) *BiliRoom {
@@ -51,7 +50,7 @@ func NewBiliRoom(roomId string) *BiliRoom {
 	} else {
 		realId = roomId
 	}
-	
+
 	return &BiliRoom{
 		roomId:  roomId,
 		realId:  realId,
@@ -60,16 +59,25 @@ func NewBiliRoom(roomId string) *BiliRoom {
 		OutMsg:  OutMsg,
 		isAlive: false,
 		timeout: 3,
-		MsgHandler: func(mi *model.MessageInfo) error {
-			ulog.Infof("[弹幕] %s: %s", mi.Info.([]interface{})[2].([]interface{})[1], mi.Info.([]interface{})[1])
-			return nil
+		MsgHandler: func(mi *model.MessageInfo) {
+			// []interface{})[2].([]interface{})[0] uid
+			ulog.Infof("[%s]: %s", mi.Info.([]interface{})[2].([]interface{})[1], mi.Info.([]interface{})[1])
+		},
+		SCMsgHandler: func(sci *model.SuperChatInfo) {
+			ulog.Infof("[%s] %d元: %s %d", sci.Data.UserInfo.Uname, sci.Data.Price, sci.Data.Message, sci.Data.ID)
+		},
+		GuardHandler: func(ci *model.CrewInfo) {
+			ulog.Infof("[%s] 开通 %s * %d%s %d元", ci.Data.Username, ci.Data.RoleName, ci.Data.Num, ci.Data.Unit, ci.Data.Price/1000)
+		},
+		GiftHandler: func(gf *model.GiftInfo) {
+			ulog.Infof("[%s] 赠送 %d个 %s %.1f元", gf.Data.Uname, gf.Data.Num, gf.Data.GiftName, float64(gf.Data.Price)/1000*float64(gf.Data.Num))
 		},
 	}
 }
 
 func (b *BiliRoom) Start() {
 	for {
-		
+
 		if !b.isAlive {
 			if err := b.getRoomInfo(); err != nil {
 				ulog.Info("房间信息获取失败:", err)
@@ -222,45 +230,47 @@ func (dm *BiliRoom) DanmuHandler() {
 		switch mi.Cmd {
 		case "POP":
 			// 人气
-			pi := new(model.PopInfo)
-			json.Unmarshal(message, &pi)
+			// pi := new(model.PopInfo)
+			// json.Unmarshal(message, &pi)
 			// ulog.Infof("[人气] %d", pi.Count)
 
 		case "DANMU_MSG":
 			// 弹幕
 			//ulog.Infof("[弹幕] %s: %s", mi.Info.([]interface{})[2].([]interface{})[1], mi.Info.([]interface{})[1])
 			danmu[int(mi.Info.([]interface{})[2].([]interface{})[0].(interface{}).(float64))] = mi.Info.([]interface{})[1].(string)
-			err := dm.MsgHandler(mi)
-			if err != nil {
-				ulog.Error(err)
-			}
+			go dm.MsgHandler(mi)
+
 		case "SUPER_CHAT_MESSAGE":
 			// SC
 			sci := new(model.SuperChatInfo)
 			json.Unmarshal(message, &sci)
-			ulog.Infof("[SC] %d元 %s: %s %d", sci.Data.Price, sci.Data.UserInfo.Uname, sci.Data.Message, sci.Data.ID)
+			go dm.SCMsgHandler(sci)
+
+			// ulog.Infof("[SC] %d元 %s: %s %d", sci.Data.Price, sci.Data.UserInfo.Uname, sci.Data.Message, sci.Data.ID)
 			scList[int(sci.Data.ID)] = *sci
 		case "SUPER_CHAT_MESSAGE_JPN":
 
 		case "SUPER_CHAT_MESSAGE_DELETE":
 			// SC被删除
-			ulog.Infof("%s", string(message))
-			scd := new(model.SuperChatDelete)
-			json.Unmarshal(message, &scd)
-			sci := scList[int(scd.Data.Ids[0])]
-			ulog.Infof("[SC被删除] %s : %s", sci.Data.UserInfo.Uname, sci.Data.Message)
+			// ulog.Infof("%s", string(message))
+			// scd := new(model.SuperChatDelete)
+			// json.Unmarshal(message, &scd)
+			// sci := scList[int(scd.Data.Ids[0])]
+			// ulog.Infof("[SC被删除] %s : %s", sci.Data.UserInfo.Uname, sci.Data.Message)
 
 		case "SEND_GIFT":
 			// 礼物
 			// ulog.Infof("%s", string(message[16:]))
 			gf := new(model.GiftInfo)
 			json.Unmarshal(message, &gf)
+			go dm.GiftHandler(gf)
+
 			// ulog.Infof("[礼物] %s 赠送 %d个 %s %.1f元", gf.Data.Uname, gf.Data.Num, gf.Data.GiftName, float64(gf.Data.Price)/1000*float64(gf.Data.Num))
 		case "COMBO_SEND":
 			// 连击礼物
-			// ulog.Infof(string(message))
-			ci := new(model.ComboInfo)
-			json.Unmarshal(message, &ci)
+			// // ulog.Infof(string(message))
+			// ci := new(model.ComboInfo)
+			// json.Unmarshal(message, &ci)
 			// ulog.Infof("[礼物连击] %s 连续赠送 %d个 %s ", ci.Data.Uname, ci.Data.ComboNum, ci.Data.GiftName)
 		case "GUARD_BUY":
 			// 大航海
@@ -268,6 +278,8 @@ func (dm *BiliRoom) DanmuHandler() {
 			// 大航海
 			ci := new(model.CrewInfo)
 			json.Unmarshal(message, &ci)
+			go dm.GuardHandler(ci)
+
 			// ulog.Infof("[大航海] %s 开通 %s * %d%s %d元", ci.Data.Username, ci.Data.RoleName, ci.Data.Num, ci.Data.Unit, ci.Data.Price/1000)
 		case "ONLINE_RANK_V2":
 
@@ -284,12 +296,12 @@ func (dm *BiliRoom) DanmuHandler() {
 		case "HOT_RANK_CHANGED_V2":
 
 		case "LIVE":
-			ulog.Infof("开播了")
+			// ulog.Infof("开播了")
 			// fmt.Println(string(message[16:]))
 		case "PREPARING":
-			ulog.Infof("已下播")
-			danmu = map[int]string{}
-			scList = map[int]model.SuperChatInfo{}
+			// ulog.Infof("已下播")
+			// danmu = map[int]string{}
+			// scList = map[int]model.SuperChatInfo{}
 			// fmt.Println(string(message[16:]))
 		case "ROOM_CHANGE":
 
@@ -316,10 +328,10 @@ func (dm *BiliRoom) DanmuHandler() {
 		case "ROOM_BLOCK_MSG":
 			// 禁言个人
 			// {"cmd":"ROOM_BLOCK_MSG","data":{"dmscore":30,"operator":2,"uid":1772442517,"uname":"晓小轩iAvA"},"uid":"1772442517","uname":"晓小轩iAvA"}
-			bi := new(model.BlockInfo)
-			json.Unmarshal(message, &bi)
-			ulog.Infof("[禁言] %s 被禁言", bi.Data.Uname)
-			ulog.Infof("上一条弹幕是: %s", danmu[bi.Data.UID])
+			// bi := new(model.BlockInfo)
+			// json.Unmarshal(message, &bi)
+			// ulog.Infof("[禁言] %s 被禁言", bi.Data.Uname)
+			// ulog.Infof("上一条弹幕是: %s", danmu[bi.Data.UID])
 			// ulog.Infof("%s", string(message[16:]))
 		case "ROOM_SILENT_ON":
 			// 开启禁言
