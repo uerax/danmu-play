@@ -2,12 +2,11 @@
  * @Author: ww
  * @Date: 2022-07-19 02:38:00
  * @Description:
- * @FilePath: \danmu-play\game\luckdraw.go
+ * @FilePath: /danmuplay/game/luckdraw.go
  */
 package game
 
 import (
-	"encoding/base64"
 	"errors"
 	"math/rand"
 	"time"
@@ -22,6 +21,8 @@ var errNotTask = errors.New("没有抽奖活动")
 var errNotParticipant = errors.New("没有参与者或不存在任务")
 
 var redisPre = "luckdraw:"
+var redisBase = ":base"
+var redisList = ":list"
 
 type LuckDraw struct {
 	Start      int64  // 开始时间
@@ -52,9 +53,9 @@ func (t *LuckDraw) NewTask(expire int) error {
 	t.Start = now.Unix()
 	t.End = now.Add(time.Minute * time.Duration(expire)).Unix()
 	t.InProgress = true
-	t.Id = base64.StdEncoding.EncodeToString([]byte(now.Format("2006-01-02 15:04:05")))
+	t.Id = now.Format("20060102150405")
 	t.Cnt = 0
-	redis.HSetStruct(redisPre+t.Id, t)
+	redis.HSetStruct(redisPre+t.Id+redisBase, t)
 	return nil
 }
 
@@ -62,6 +63,7 @@ func (t *LuckDraw) Stop() {
 	if t.InProgress {
 		t.InProgress = false
 	}
+	
 }
 
 func (t *LuckDraw) isValid() bool {
@@ -75,9 +77,12 @@ func (t *LuckDraw) Open() (string, error) {
 	}
 
 	rand.Seed(t.Start)
-	luckdog := rand.Intn(t.Cnt)
-	redis.HSet(redisPre+t.Id, "luckydog", luckdog)
-	return redis.LIndex(redisPre+t.Id+":list", int64(luckdog))
+	if !redis.HExists(redisPre+t.Id+redisBase, "luckydog") {
+		luckdog := rand.Intn(t.Cnt)
+		redis.HSet(redisPre+t.Id+redisBase, "luckydog", luckdog)
+		return redis.LIndex(redisPre+t.Id+redisList, int64(luckdog))
+	}
+	return redis.HGet(redisPre+t.Id+redisBase, "luckydog")
 }
 
 func (t *LuckDraw) Join(uid string) error {
@@ -85,7 +90,7 @@ func (t *LuckDraw) Join(uid string) error {
 		return errNotTask
 	}
 	//todo
-	redis.RPush(redisPre+t.Id+":list", uid)
+	redis.RPush(redisPre+t.Id+redisList, uid)
 	t.Cnt++
 	return nil
 }

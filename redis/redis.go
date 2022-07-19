@@ -1,7 +1,7 @@
 /*
  * @Author: UerAx
  * @Date: 2022-07-08 16:21:39
- * @FilePath: \danmu-play\redis\redis.go
+ * @FilePath: /danmuplay/redis/redis.go
  * Copyright (c) 2022 by UerAx uerax@live.com, All Rights Reserved.
  */
 package redis
@@ -35,6 +35,11 @@ func Exists(key string) (bool, error) {
 		return false, err
 	}
 	return i == 1, nil
+}
+
+func HExists(key, field string) bool {
+	b, _ := rdb.HExists(ctx, key,field).Result()
+	return b
 }
 
 func HSet(key string, val ...interface{}) (int64, error) {
