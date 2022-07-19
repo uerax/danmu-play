@@ -16,13 +16,8 @@ import (
 func TestClient(t *testing.T) {
 	cfg.Init("../etc")
 	Init()
-	rdb.Set(ctx, "1", "1", 0)
-	uid := "123"
 	// HSet(uid, "uid", uid)
 	// HSet(uid, "Name", name)
 	// HSet(uid, "Point", 1)
 	// HSet(uid, "Checkin", 1)
-
-	Hincrby(uid, "point", 1)
-
 }

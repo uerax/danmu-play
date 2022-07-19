@@ -1,7 +1,7 @@
 /*
  * @Author: UerAx
  * @Date: 2022-07-08 14:35:55
- * @FilePath: /danmuplay/danmu/play.go
+ * @FilePath: \danmu-play\danmu\play.go
  * Copyright (c) 2022 by UerAx uerax@live.com, All Rights Reserved.
  */
 package danmu
@@ -34,26 +34,39 @@ func MsgHandler(msg *model.MessageInfo) {
 
 	m := msg.Info.([]interface{})[1].(string)
 	m = strings.TrimSpace(m)
-	if m[0] != '#' {
+	msgSlice := strings.Split(m, " ")
+
+	if len(msgSlice) == 0 || msgSlice[0][0] != '#' {
 		return
 	}
-
-	m = m[1:]
 
 	uid := strconv.Itoa(int(msg.Info.([]interface{})[2].([]interface{})[0].(float64)))
 
 	name := fmt.Sprint(msg.Info.([]interface{})[2].([]interface{})[1])
 
-	switch m {
-	case "签到":
+	switch msgSlice[0] {
+	case "#签到":
 		checkIn(uid, name)
-	case "积分":
+	case "#积分":
 		getPoint(uid, name)
-	case "运势":
+	case "#运势":
 		getFate(uid, name)
-	case "能力":
+	case "#能力":
 		getSuperpower(uid, name)
-	case "抽奖":
+	case "#rolltime":
+		if uid == cfg.GetStringWithDefault("211336", "userid") {
+			var tmp string
+			if len(msgSlice) == 1 {
+				tmp = "10"
+			} else {
+				tmp = msgSlice[1]
+			}
+			err := startLuckDraw(uid, name, tmp)
+			if err != nil {
+				ulog.Error(err)
+			}
+		}
+	case "#roll":
 		luckDraw(uid, name)
 	}
 
@@ -64,7 +77,7 @@ func SCMsgHandler(sc *model.SuperChatInfo) {
 	ulog.Infof("[%s] %d元: %s %d", sc.Data.UserInfo.Uname, sc.Data.Price, sc.Data.Message, sc.Data.ID)
 	uid := strconv.Itoa(sc.Data.UID)
 	incr := sc.Data.Price * 10
-	exists, err := redis.Exists("user:"+uid)
+	exists, err := redis.Exists("user:" + uid)
 	if err != nil {
 		ulog.Error(err)
 		return
@@ -100,8 +113,8 @@ func SCMsgHandler(sc *model.SuperChatInfo) {
 func GuardHandler(ci *model.CrewInfo) {
 	ulog.Infof("[%s] 开通 %s * %d%s %d元", ci.Data.Username, ci.Data.RoleName, ci.Data.Num, ci.Data.Unit, ci.Data.Price/1000)
 	uid := strconv.Itoa(ci.Data.UID)
-	incr := ci.Data.Price/100
-	exists, err := redis.Exists("user:"+uid)
+	incr := ci.Data.Price / 100
+	exists, err := redis.Exists("user:" + uid)
 	if err != nil {
 		ulog.Error(err)
 		return
@@ -137,7 +150,7 @@ func GuardHandler(ci *model.CrewInfo) {
 func GiftHandler(gf *model.GiftInfo) {
 	ulog.Infof("[%s] 赠送 %d个 %s %.1f元", gf.Data.Uname, gf.Data.Num, gf.Data.GiftName, float64(gf.Data.Price)/1000*float64(gf.Data.Num))
 	uid := strconv.Itoa(gf.Data.UID)
-	incr := gf.Data.Price/100
+	incr := gf.Data.Price / 100
 	if incr == 0 {
 		incr = gf.Data.Num
 	}
@@ -176,7 +189,7 @@ func GiftHandler(gf *model.GiftInfo) {
 
 func checkIn(uid, name string) {
 	now := time.Now().Format("20060102")
-	exists, err := redis.Exists("user:"+uid)
+	exists, err := redis.Exists("user:" + uid)
 	if err != nil {
 		ulog.Error(err)
 		return
@@ -201,7 +214,7 @@ func checkIn(uid, name string) {
 		if err != nil {
 			ulog.Error(err)
 		}
-		Send(fmt.Sprintf("[%s] 签到成功", name))
+		// Send(fmt.Sprintf("[%s] 签到成功", name))
 		return
 	}
 
@@ -222,7 +235,7 @@ func checkIn(uid, name string) {
 			return
 		}
 	}
-	Send(fmt.Sprintf("[%s] 签到成功", name))
+	// Send(fmt.Sprintf("[%s] 签到成功", name))
 }
 
 func getPoint(uid, name string) {
@@ -249,8 +262,4 @@ func getSuperpower(uid, name string) {
 	msg := game.GetSuperpower(uid, name)
 	ulog.Info(msg)
 	Send(msg)
-}
-
-func luckDraw(uid, name string) {
-	
 }

@@ -1,7 +1,7 @@
 /*
  * @Author: UerAx
  * @Date: 2022-07-08 15:18:34
- * @FilePath: \danmu-play\danmuplay.go
+ * @FilePath: /danmu-play/danmuplay.go
  * Copyright (c) 2022 by UerAx uerax@live.com, All Rights Reserved.
  */
 package main
