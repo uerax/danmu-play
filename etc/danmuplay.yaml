@@ -1,4 +1,5 @@
 cookie: 
 roomid: 746504
+userid: 211336
 redis:
   url: localhost:6379

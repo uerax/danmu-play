@@ -8,6 +8,7 @@ package redis
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/uerax/danmuplay/cfg"
@@ -36,8 +37,17 @@ func Exists(key string) (bool, error) {
 	return i == 1, nil
 }
 
+func HExists(key, field string) bool {
+	b, _ := rdb.HExists(ctx, key,field).Result()
+	return b
+}
+
 func HSet(key string, val ...interface{}) (int64, error) {
 	return rdb.HSet(ctx, key, val).Result()
+}
+
+func HSetStruct(key string, val interface{}) (int64, error) {
+	return rdb.HSet(ctx, key, structToMap(val)).Result()
 }
 
 func HGetAll(key string) (map[string]string, error) {
@@ -54,4 +64,47 @@ func Hincrby(key string, field string, incr int64) (int64, error) {
 
 func Check() (string, error) {
 	return rdb.Ping(ctx).Result()
+}
+
+func LPush(key string, val ...interface{}) (int64, error) {
+	return rdb.LPush(ctx, key, val...).Result()
+}
+
+func RPush(key string, val ...interface{}) (int64, error) {
+	return rdb.RPush(ctx, key, val...).Result()
+}
+
+func LIndex(key string, index int64) (string, error) {
+	return rdb.LIndex(ctx, key, index).Result()
+}
+
+func structToMap(val any) map[string]any {
+
+	if val == nil {
+		return nil
+	}
+
+	hash := make(map[string]any, 0)
+
+	t := reflect.TypeOf(val) // 获取obj的反射类型
+
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	v := reflect.Indirect(reflect.ValueOf(val)) // 获取obj的反射值
+
+	for i := 0; i < t.NumField(); i++ {
+		// 存在tag，则使用tag作为key
+		var key string
+		tag := t.Field(i).Tag.Get("json")
+		if tag != "" {
+			key = tag
+		} else {
+			key = t.Field(i).Name
+		}
+		hash[key] = v.Field(i).Interface()
+	}
+
+	return hash
 }
