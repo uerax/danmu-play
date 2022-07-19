@@ -53,6 +53,8 @@ func MsgHandler(msg *model.MessageInfo) {
 		getFate(uid, name)
 	case "能力":
 		getSuperpower(uid, name)
+	case "抽奖":
+		luckDraw(uid, name)
 	}
 
 	// redis.HGetAll(([]interface{})[2].([]interface{})[0].(string))
@@ -62,34 +64,34 @@ func SCMsgHandler(sc *model.SuperChatInfo) {
 	ulog.Infof("[%s] %d元: %s %d", sc.Data.UserInfo.Uname, sc.Data.Price, sc.Data.Message, sc.Data.ID)
 	uid := strconv.Itoa(sc.Data.UID)
 	incr := sc.Data.Price * 10
-	exists, err := redis.Exists(uid)
+	exists, err := redis.Exists("user:"+uid)
 	if err != nil {
 		ulog.Error(err)
 		return
 	}
 	if !exists {
-		_, err = redis.HSet(uid, "uid", uid)
+		_, err = redis.HSet("user:"+uid, "uid", uid)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "name", sc.Data.UserInfo.Uname)
+		_, err = redis.HSet("user:"+uid, "name", sc.Data.UserInfo.Uname)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "point", incr)
+		_, err = redis.HSet("user:"+uid, "point", incr)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "checkin", "")
+		_, err = redis.HSet("user:"+uid, "checkin", "")
 		if err != nil {
 			ulog.Error(err)
 		}
 		return
 	}
-	_, err = redis.Hincrby(uid, "point", int64(incr))
+	_, err = redis.Hincrby("user:"+uid, "point", int64(incr))
 	if err != nil {
 		ulog.Error(err)
 	}
@@ -99,34 +101,34 @@ func GuardHandler(ci *model.CrewInfo) {
 	ulog.Infof("[%s] 开通 %s * %d%s %d元", ci.Data.Username, ci.Data.RoleName, ci.Data.Num, ci.Data.Unit, ci.Data.Price/1000)
 	uid := strconv.Itoa(ci.Data.UID)
 	incr := ci.Data.Price/100
-	exists, err := redis.Exists(uid)
+	exists, err := redis.Exists("user:"+uid)
 	if err != nil {
 		ulog.Error(err)
 		return
 	}
 	if !exists {
-		_, err = redis.HSet(uid, "uid", uid)
+		_, err = redis.HSet("user:"+uid, "uid", uid)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "name", ci.Data.Username)
+		_, err = redis.HSet("user:"+uid, "name", ci.Data.Username)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "point", incr)
+		_, err = redis.HSet("user:"+uid, "point", incr)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "checkin", "")
+		_, err = redis.HSet("user:"+uid, "checkin", "")
 		if err != nil {
 			ulog.Error(err)
 		}
 		return
 	}
-	_, err = redis.Hincrby(uid, "point", int64(incr))
+	_, err = redis.Hincrby("user:"+uid, "point", int64(incr))
 	if err != nil {
 		ulog.Error(err)
 	}
@@ -145,28 +147,28 @@ func GiftHandler(gf *model.GiftInfo) {
 		return
 	}
 	if !exists {
-		_, err = redis.HSet(uid, "uid", uid)
+		_, err = redis.HSet("user:"+uid, "uid", uid)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "name", gf.Data.Uname)
+		_, err = redis.HSet("user:"+uid, "name", gf.Data.Uname)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "point", incr)
+		_, err = redis.HSet("user:"+uid, "point", incr)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "checkin", "")
+		_, err = redis.HSet("user:"+uid, "checkin", "")
 		if err != nil {
 			ulog.Error(err)
 		}
 		return
 	}
-	_, err = redis.Hincrby(uid, "point", int64(incr))
+	_, err = redis.Hincrby("user:"+uid, "point", int64(incr))
 	if err != nil {
 		ulog.Error(err)
 	}
@@ -174,28 +176,28 @@ func GiftHandler(gf *model.GiftInfo) {
 
 func checkIn(uid, name string) {
 	now := time.Now().Format("20060102")
-	exists, err := redis.Exists(uid)
+	exists, err := redis.Exists("user:"+uid)
 	if err != nil {
 		ulog.Error(err)
 		return
 	}
 	if !exists {
-		_, err = redis.HSet(uid, "uid", uid)
+		_, err = redis.HSet("user:"+uid, "uid", uid)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "name", name)
+		_, err = redis.HSet("user:"+uid, "name", name)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "point", 1)
+		_, err = redis.HSet("user:"+uid, "point", 1)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "checkin", now)
+		_, err = redis.HSet("user:"+uid, "checkin", now)
 		if err != nil {
 			ulog.Error(err)
 		}
@@ -203,18 +205,18 @@ func checkIn(uid, name string) {
 		return
 	}
 
-	lastCheckIn, err := redis.HGet(uid, "checkin")
+	lastCheckIn, err := redis.HGet("user:"+uid, "checkin")
 	if err != nil {
 		ulog.Error(err)
 		return
 	}
 	if lastCheckIn != now {
-		_, err = redis.Hincrby(uid, "point", 1)
+		_, err = redis.Hincrby("user:"+uid, "point", 1)
 		if err != nil {
 			ulog.Error(err)
 			return
 		}
-		_, err = redis.HSet(uid, "checkin", now)
+		_, err = redis.HSet("user:"+uid, "checkin", now)
 		if err != nil {
 			ulog.Error(err)
 			return
@@ -224,7 +226,7 @@ func checkIn(uid, name string) {
 }
 
 func getPoint(uid, name string) {
-	pit, err := redis.HGet(uid, "point")
+	pit, err := redis.HGet("user:"+uid, "point")
 	if err != nil {
 		ulog.Error(err)
 		return
@@ -247,4 +249,8 @@ func getSuperpower(uid, name string) {
 	msg := game.GetSuperpower(uid, name)
 	ulog.Info(msg)
 	Send(msg)
+}
+
+func luckDraw(uid, name string) {
+	
 }
