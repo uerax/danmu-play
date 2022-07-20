@@ -7,90 +7,101 @@
 package game
 
 import (
-	"errors"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/uerax/danmuplay/redis"
 )
 
-var Luckdraw = NewLuckDraw()
-
-var errPreNotEnd = errors.New("有抽奖未结束")
-var errNotTask = errors.New("没有抽奖活动")
-var errNotParticipant = errors.New("没有参与者或不存在任务")
+var Luckdraw = &LuckDrawTask{}
 
 var redisPre = "luckdraw:"
 var redisBase = ":base"
 var redisList = ":list"
 
+type LuckDrawTask struct {
+	id string // id
+	luckdraw *LuckDraw
+}
 type LuckDraw struct {
-	Start      int64  // 开始时间
-	End        int64  // 结束时间
-	InProgress bool   // 抽奖中
-	Id         string // 抽奖活动id
-	Name       string // 抽奖描述
-	Cnt        int    // 参与人数
+	Start      int64  `json:"start,omitempty"`        // 开始时间
+	End        int64  `json:"end,omitempty"`          // 结束时间
+	InProgress bool   `json:"inprogress,omitempty"` // 抽奖中
+	Id         string `json:"id,omitempty"`         // 抽奖活动id
+	Name       string `json:"name,omitempty"`       // 抽奖描述
+	Cnt        int    `json:"cnt,omitempty"`        // 参与人数
 	// luckdog 抽奖结束后生成
 }
 
-func NewLuckDraw() *LuckDraw {
-	return &LuckDraw{}
+func NewLuckDraw(expire int) {
+	ld := newLuckDraw(expire)
+	Luckdraw.id = ld.Id
+	Luckdraw.luckdraw = ld
+	redis.HSetStruct(redisPre+ld.Id+redisBase,ld)
+	go func(key string, end int64, expire int) {
+		t := time.NewTicker(time.Second * time.Duration(expire))
+		defer t.Stop()
+		for range t.C {
+			redis.HSet(redisPre+ld.Id+redisBase, "inprogress", false)
+		}
+	}(ld.Id, ld.End, expire)
 }
 
-func (t *LuckDraw) ForceNewTask(expire int) {
-	t.Stop()
-	t.NewTask(expire)
+func newLuckDraw(expire int) *LuckDraw {
+	new := new(LuckDraw)
+	new.NewTask(expire)
+	return new
 }
 
-func (t *LuckDraw) NewTask(expire int) error {
-
-	if t.InProgress && t.isValid() {
-		return errPreNotEnd
-	}
-
+func (t *LuckDraw) NewTask(expire int) {
 	now := time.Now()
 	t.Start = now.Unix()
 	t.End = now.Add(time.Minute * time.Duration(expire)).Unix()
 	t.InProgress = true
 	t.Id = now.Format("20060102150405")
-	t.Cnt = 0
-	redis.HSetStruct(redisPre+t.Id+redisBase, t)
-	return nil
+	t.Cnt = 0	
 }
 
 func (t *LuckDraw) Stop() {
-	if t.InProgress {
-		t.InProgress = false
-	}
-	
-}
-
-func (t *LuckDraw) isValid() bool {
-	return time.Now().Unix() < t.End
+	redis.HSet(redisPre+t.Id+redisBase, "inprogress", false)
 }
 
 func (t *LuckDraw) Open() (string, error) {
 
-	if t.Cnt == 0 {
-		return "", errNotParticipant
-	}
-
 	rand.Seed(t.Start)
 	if !redis.HExists(redisPre+t.Id+redisBase, "luckydog") {
-		luckdog := rand.Intn(t.Cnt)
-		redis.HSet(redisPre+t.Id+redisBase, "luckydog", luckdog)
-		return redis.LIndex(redisPre+t.Id+redisList, int64(luckdog))
+		count, err := redis.HGet(redisPre+t.Id+redisBase, "cnt")
+		if err != nil {
+			return "", err
+		}
+		cnt, err := strconv.Atoi(count)
+		if err != nil {
+			return "", err
+		}
+		luckdog := rand.Intn(cnt)
+		uid, err := redis.LIndex(redisPre+t.Id+redisList, int64(luckdog))
+		if err != nil {
+			return "", err
+		}
+		redis.HSet(redisPre+t.Id+redisBase, "luckydog", uid)
+		return uid, nil
 	}
 	return redis.HGet(redisPre+t.Id+redisBase, "luckydog")
 }
 
-func (t *LuckDraw) Join(uid string) error {
-	if !t.InProgress {
-		return errNotTask
-	}
+func (t *LuckDraw) Join(uid string) {
+
 	//todo
 	redis.RPush(redisPre+t.Id+redisList, uid)
-	t.Cnt++
-	return nil
+	redis.Hincrby(redisPre + t.Id + redisBase, "cnt", 1)
+}
+
+func JoinLuckDraw(uid string) {
+	Luckdraw.luckdraw.Join(uid)
+}
+
+func EndLuckDraw() (string, error) {
+	Luckdraw.luckdraw.Stop()
+	return Luckdraw.luckdraw.Open()
 }

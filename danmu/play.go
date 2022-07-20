@@ -1,7 +1,7 @@
 /*
  * @Author: UerAx
  * @Date: 2022-07-08 14:35:55
- * @FilePath: \danmu-play\danmu\play.go
+ * @FilePath: /danmuplay/danmu/play.go
  * Copyright (c) 2022 by UerAx uerax@live.com, All Rights Reserved.
  */
 package danmu
@@ -72,7 +72,7 @@ func MsgHandler(msg *model.MessageInfo) {
 		luckDraw(uid, name)
 	case "#rollring":
 		if uid == cfg.GetStringWithDefault("211336", "userid") {
-			endLuckDraw(uid, name)
+			endLuckDraw()
 		}
 	}
 

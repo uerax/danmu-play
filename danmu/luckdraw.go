@@ -17,17 +17,20 @@ func startLuckDraw(uid, name, msg string) error {
 	if err != nil {
 		return err
 	}
-	return game.Luckdraw.NewTask(i)
-
+	game.NewLuckDraw(i)
+	
+	return nil
 }
 
 func luckDraw(uid, name string) {
-	if err := game.Luckdraw.Join(uid); err != nil {
-		ulog.Error(err)
-	}
+	game.JoinLuckDraw(uid)
 }
 
-func endLuckDraw(uid, name string) {
-	game.Luckdraw.Stop()
-	game.Luckdraw.Open()
+func endLuckDraw() {
+	// todo 后期可加上对uid的私信通知
+	_, err := game.EndLuckDraw()
+	if err != nil {
+		ulog.Error(err)
+	}
+	
 }
