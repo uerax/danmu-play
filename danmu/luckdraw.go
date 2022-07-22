@@ -23,7 +23,7 @@ func startLuckDraw(uid, name, msg string) error {
 }
 
 func luckDraw(uid, name string) {
-	game.JoinLuckDraw(uid)
+	game.JoinLuckDraw(uid, name)
 }
 
 func endLuckDraw() {

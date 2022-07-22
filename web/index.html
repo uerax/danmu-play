@@ -1,0 +1,107 @@
+<!--
+ * @Author: ww
+ * @Date: 2022-07-21 17:19:51
+ * @Description: 
+ * @FilePath: /danmuplay/web/index.html
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>弹幕抽奖开奖</title>
+    <link rel="stylesheet" href="layui/css/layui.css">
+</head>
+
+<body>
+
+    <div class="layui-container">
+        <div class="layui-progress" style="margin: 15px 0 30px;">
+            <div class="layui-progress-bar" lay-percent="100%"></div>
+        </div>
+
+        <blockquote class="layui-elem-quote" style="margin-top: 30px;">
+            <div class="layui-text">
+                <ul>
+                    <li>你当前预览的是：<span>弹幕抽奖结果页<span id="version"></span></span></li>
+                    <li>可根据当前页面的开奖结果,或者根据主播的私信获得开奖结果</li>
+                </ul>
+            </div>
+        </blockquote>
+
+        <table class="layui-table">
+            <colgroup>
+                <col width="150">
+                <col width="200">
+                <col>
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>抽奖id</th>
+                    <th>天选之人</th>
+                    <th>中间号数</th>
+                    <th>奖励</th>
+                </tr>
+            </thead>
+            <tbody id="tBody">
+
+            </tbody>
+        </table>
+    </div>
+
+    <!-- body 末尾处引入 layui -->
+    <script src="layui/layui.js"></script>
+    <script>
+        layui.use(function () {
+            var layer = layui.layer
+                , form = layui.form
+                , laypage = layui.laypage
+                , element = layui.element
+                , laydate = layui.laydate
+                , util = layui.util;
+            //输出版本号
+
+        });
+    </script>
+    <script src='data/luckdraw.js'></script>
+    <script>
+        layui.use(function () {
+            var d = JSON.parse(data)
+            //通过for循环，将所有员工的信息都拼接到一个字符串里
+            //定义一个变量，用于存储拼接的字符串
+            console.log(d)
+            var htmlStr = "";
+            for (var i = 0; i < d.length; i++) {
+                //获取一条员工信息
+                var tmp = d[i];
+                /*
+                <tr>
+                    <td>001</td>
+                    <td>张三</td>
+                    <td>800.0</td>
+                </tr>
+                */
+                htmlStr += "<tr>";
+                if (tmp.hasOwnProperty("id")) {
+                    htmlStr += "<td>" + tmp.id + "</td>";
+                }
+                if (tmp.hasOwnProperty("luckydog")) {
+                    htmlStr += "<td>" + tmp.luckydog + "</td>";
+                }
+                if (tmp.hasOwnProperty("luckynum")) {
+                    htmlStr += "<td>" + tmp.luckynum + "</td>";
+                }
+                if (tmp.hasOwnProperty("prize")) {
+                    htmlStr += "<td>" + tmp.prize + "</td>";
+                }
+                htmlStr += "</tr>";
+            }
+            //将拼接的字符串放进tbody里
+            console.log(htmlStr)
+            document.getElementById("tBody").innerHTML = htmlStr;
+        });
+    </script>
+</body>
+
+</html>

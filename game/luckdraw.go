@@ -7,14 +7,21 @@
 package game
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/rand"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/uerax/danmuplay/global"
 	"github.com/uerax/danmuplay/redis"
 )
 
 var Luckdraw = &LuckDrawTask{}
+
+var ulog = global.Log
 
 var redisPre = "luckdraw:"
 var redisBase = ":base"
@@ -90,18 +97,52 @@ func (t *LuckDraw) Open() (string, error) {
 	return redis.HGet(redisPre+t.Id+redisBase, "luckydog")
 }
 
-func (t *LuckDraw) Join(uid string) {
+func (t *LuckDraw) Join(uid, name string) {
 
 	//todo
-	redis.RPush(redisPre+t.Id+redisList, uid)
+	redis.RPush(redisPre+t.Id+redisList, uid+";"+name)
 	redis.Hincrby(redisPre + t.Id + redisBase, "cnt", 1)
 }
 
-func JoinLuckDraw(uid string) {
-	Luckdraw.luckdraw.Join(uid)
+func JoinLuckDraw(uid, name string) {
+	Luckdraw.luckdraw.Join(uid, name)
 }
 
 func EndLuckDraw() (string, error) {
 	Luckdraw.luckdraw.Stop()
 	return Luckdraw.luckdraw.Open()
+}
+
+func allDataToFile() {
+	keys, _, err := redis.ScanAll(redisPre + "*" + redisBase)
+	if err != nil {
+		ulog.Error(err)
+		return
+	}
+	out := "data=`[%s]`"
+	var d strings.Builder
+	for i, v := range keys {
+		m, err := redis.HGetAll(v)
+		if err != nil {
+			ulog.Error(err)
+			continue
+		}
+		b, err := json.Marshal(m)
+		if err != nil {
+			ulog.Error(err)
+			continue
+		}
+		if i != 0 {
+			d.WriteString(",")
+		}
+		d.WriteString(string(b))
+	}
+	out = fmt.Sprintf(out, d.String())
+
+	f, err := os.OpenFile("../web/data/luckdraw.js", os.O_RDONLY|os.O_CREATE, 0666)
+	if err != nil {
+		ulog.Error(err)
+		return
+	}
+	f.WriteString(out)
 }
