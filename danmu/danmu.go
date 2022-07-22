@@ -176,6 +176,9 @@ func (b *BiliRoom) getRoomInfo() error {
 	}
 	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
 	err = json.Unmarshal(data, &ri)
 	if ri.Code != 0 || len(ri.Data.HostList) == 0 {
 		err = errors.New("获取房间信息失败！")
@@ -197,6 +200,9 @@ func getRealId(roomId string) (string, error) {
 	}
 	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return roomId, err
+	}
 	err = json.Unmarshal(data, &ri)
 	if ri.Code != 0 {
 		err = errors.New("获取房间信息失败！")

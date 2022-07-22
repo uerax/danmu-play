@@ -78,6 +78,10 @@ func LIndex(key string, index int64) (string, error) {
 	return rdb.LIndex(ctx, key, index).Result()
 }
 
+func ScanAll(match string) (keys []string, cursor uint64, err error) {
+	return rdb.Scan(ctx, 0, match, 0).Result()
+}
+
 func structToMap(val any) map[string]any {
 
 	if val == nil {
